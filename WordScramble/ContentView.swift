@@ -14,7 +14,11 @@ struct ContentView: View {
     @State private var errorTitle = ""
     @State private var errorMessage = ""
     @State private var showingError = false
-    
+    var score : Int {
+        get {
+           return usedWords.count
+        }
+    }
     var body: some View {
         NavigationView {
             List{
@@ -29,8 +33,22 @@ struct ContentView: View {
                             Text(word)
                         }
                     }
+                    
                 }
-            }.navigationTitle(rootWord)
+                
+             
+            }
+            .toolbar{
+                ToolbarItemGroup(placement: .bottomBar) {
+                    Text("Score: \(score)")
+                        .font(.title3)
+                    Spacer()
+                    Button("New Word") {
+                        startGame()
+                    }
+                }
+            }
+            .navigationTitle(rootWord)
                 .onSubmit (addNewWord)
                 .onAppear(perform: startGame)
                 .alert(errorTitle, isPresented: $showingError) {
@@ -46,7 +64,16 @@ struct ContentView: View {
         errorMessage = message
         showingError = true
     }
-    
+    func isRootWord(word: String) -> Bool {
+        word == rootWord ? false : true
+            
+    }
+    func hasMinimumLength(word: String) -> Bool {
+        if word.count > 3  {
+            return true
+        }
+        return false
+    }
     func isOriginal(word: String) -> Bool {
         !usedWords.contains(word)
     }
@@ -73,6 +100,7 @@ struct ContentView: View {
     
     func startGame() {
         // 1. Find the URL for start.txt in our app bundle
+        
         if let startWordsURL = Bundle.main.url(forResource: "start", withExtension: "txt") {
             // 2. Load start.txt into a string
             if let startWords = try? String(contentsOf: startWordsURL) {
@@ -81,7 +109,7 @@ struct ContentView: View {
 
                 // 4. Pick one random word, or use "silkworm" as a sensible default
                 rootWord = allWords.randomElement() ?? "silkworm"
-
+                usedWords = []
                 // If we are here everything has worked, so we can exit
                 return
             }
@@ -92,7 +120,13 @@ struct ContentView: View {
     
     func addNewWord(){
         let answer = newWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        guard answer.count > 0 else {
+        
+        guard hasMinimumLength(word: answer) else {
+            wordError(title: "Word is very short", message: "Please use more than 3 characters")
+            return
+        }
+        guard isRootWord(word: answer) else{
+            wordError(title: "Word is the rootword", message: "Please use other")
             return
         }
         guard isOriginal(word: answer) else {
